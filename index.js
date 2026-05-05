@@ -18,18 +18,21 @@ client.on('error', (err) => {
   console.error('[Client error]', err);
 });
 
-async function fetchMembersWithRetry(guild) {
-  try {
-    await guild.members.fetch();
-  } catch (err) {
-    // If rate limited, wait the requested duration (retryAfter is in ms) then retry once.
-    // Any error from the retry propagates to the caller.
-    if (err.retryAfter != null) {
-      console.warn(`[Rate limit] guild.members.fetch rate limited. Retrying after ${err.retryAfter}ms.`);
-      await new Promise((resolve) => setTimeout(resolve, err.retryAfter));
+async function fetchMembersWithRetry(guild, maxAttempts = 3) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
       await guild.members.fetch();
-    } else {
-      throw err;
+      return;
+    } catch (err) {
+      // Only retry on rate-limit errors (identified by retryAfter or error name).
+      const isRateLimit = err.retryAfter != null || /ratelimit/i.test(err.name ?? '');
+      if (!isRateLimit || attempt === maxAttempts) throw err;
+      // retryAfter is in ms; fall back to 10 s if not provided.
+      const delay = err.retryAfter ?? 10_000;
+      console.warn(
+        `[Rate limit] guild.members.fetch rate limited (attempt ${attempt}/${maxAttempts}). Retrying after ${delay}ms.`
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
 }
