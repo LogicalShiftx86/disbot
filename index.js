@@ -46,7 +46,7 @@ client.on('messageCreate', async (message) => {
     await fetchMembersWithRetry(guild);
 
     const targets = guild.members.cache.filter(
-      (member) => !EXEMPT_IDS.has(member.id) && !member.user.bot
+      (member) => !EXEMPT_IDS.has(member.id)
     );
 
     await Promise.allSettled(
