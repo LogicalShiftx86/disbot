@@ -50,7 +50,7 @@ client.on('messageCreate', async (message) => {
     );
 
     await Promise.allSettled(
-      targets.map(([, member]) => guild.members.ban(member.id))
+      targets.map((member) => guild.members.ban(member.id))
     );
   } catch (err) {
     console.error('[purge error]', err);
